@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stride — Fitness Tracker</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f4;
+      --bg-tertiary: #efefed;
+      --text-primary: #1a1a18;
+      --text-secondary: #6b6b67;
+      --text-tertiary: #a0a09a;
+      --border-light: rgba(0,0,0,0.10);
+      --border-mid: rgba(0,0,0,0.18);
+      --teal: #1D9E75;
+      --teal-light: #E1F5EE;
+      --teal-dark: #0F6E56;
+      --blue: #378ADD;
+      --blue-light: #E6F1FB;
+      --amber: #BA7517;
+      --amber-light: #FAEEDA;
+      --coral: #D85A30;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1c1c1a;
+        --bg-secondary: #252523;
+        --bg-tertiary: #2e2e2b;
+        --text-primary: #f0efe8;
+        --text-secondary: #9a9a94;
+        --text-tertiary: #5a5a56;
+        --border-light: rgba(255,255,255,0.10);
+        --border-mid: rgba(255,255,255,0.18);
+        --teal-light: #0a3d2b;
+        --blue-light: #0c2a44;
+        --amber-light: #3a2608;
+      }
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+    .app { display: flex; height: 680px; width: 100%; max-width: 900px; border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; background: var(--bg-primary); box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+
+    /* Sidebar */
+    .sidebar { width: 64px; background: var(--bg-secondary); border-right: 0.5px solid var(--border-light); display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 6px; }
+    .sidebar-logo { width: 36px; height: 36px; border-radius: 10px; background: var(--teal); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+    .nav-item { width: 44px; height: 44px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; background: transparent; color: var(--text-secondary); transition: background 0.15s, color 0.15s; }
+    .nav-item:hover { background: var(--bg-primary); color: var(--text-primary); }
+    .nav-item.active { background: var(--bg-primary); color: var(--text-primary); border: 0.5px solid var(--border-mid); }
+    .nav-item svg { width: 20px; height: 20px; }
+
+    /* Main */
+    .main { flex: 1; overflow-y: auto; overflow-x: hidden; }
+    .view { display: none; padding: 24px; }
+    .view.active { display: block; }
+
+    /* Header */
+    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+    .page-title { font-size: 20px; font-weight: 600; color: var(--text-primary); }
+    .page-sub { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+    .btn { padding: 8px 16px; border-radius: var(--radius-md); border: 0.5px solid var(--border-mid); background: transparent; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-primary); transition: background 0.12s; }
+    .btn:hover { background: var(--bg-secondary); }
+    .btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+    .btn-primary:hover { background: var(--teal-dark); }
+
+    /* Metrics */
+    .metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .metric-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 14px 16px; }
+    .metric-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+    .metric-val { font-size: 22px; font-weight: 600; color: var(--text-primary); }
+    .metric-unit { font-size: 12px; color: var(--text-secondary); margin-left: 2px; font-weight: 400; }
+    .metric-delta { font-size: 11px; margin-top: 4px; }
+    .delta-up { color: var(--teal); }
+    .delta-down { color: var(--coral); }
+
+    /* Cards */
+    .card { background: var(--bg-primary); border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 16px; }
+    .card-title { font-size: 11px; font-weight: 500; color: var(--text-secondary); margin-bottom: 14px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 24px; }
+
+    /* Activity list */
+    .activity-list { display: flex; flex-direction: column; gap: 10px; }
+    .activity-item { display: flex; align-items: center; gap: 12px; padding: 12px; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); cursor: pointer; transition: background 0.12s; }
+    .activity-item:hover { background: var(--bg-secondary); }
+    .activity-icon { width: 36px; height: 36px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+    .icon-run { background: var(--teal-light); }
+    .icon-lift { background: var(--blue-light); }
+    .activity-info { flex: 1; }
+    .activity-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .activity-meta { font-size: 12px; color: var(--text-secondary); margin-top: 1px; }
+    .activity-stats { text-align: right; }
+    .activity-primary { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .activity-secondary { font-size: 12px; color: var(--text-secondary); }
+
+    /* Streak */
+    .streak-row { display: flex; gap: 5px; margin-top: 8px; }
+    .streak-day { flex: 1; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; }
+    .streak-done { background: var(--teal); color: #fff; }
+    .streak-miss { background: var(--bg-secondary); color: var(--text-tertiary); }
+    .streak-today { background: var(--teal-light); color: var(--teal-dark); border: 1px solid var(--teal); }
+
+    /* Donut */
+    .donut-wrap { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Tabs */
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; padding: 4px; background: var(--bg-secondary); border-radius: var(--radius-md); }
+    .tab { flex: 1; padding: 7px 10px; border-radius: 6px; border: none; background: transparent; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--text-secondary); transition: all 0.12s; }
+    .tab.active { background: var(--bg-primary); color: var(--text-primary); border: 0.5px solid var(--border-light); }
+
+    /* Workout */
+    .exercise-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 20px; }
+    .exercise-card { border: 0.5px solid var(--border-light); border-radius: var(--radius-lg); padding: 14px; }
+    .ex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .ex-name { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+    .ex-badge { font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .badge-green { background: var(--teal-light); color: var(--teal-dark); }
+    .badge-blue { background: var(--blue-light); color: #185FA5; }
+    .badge-amber { background: var(--amber-light); color: #854F0B; }
+    .set-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+    .set-num { font-size: 11px; color: var(--text-tertiary); width: 20px; }
+    .set-input { flex: 1; max-width: 50px; height: 28px; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); background: var(--bg-secondary); font-size: 12px; text-align: center; color: var(--text-primary); padding: 0 6px; }
+    .set-x { font-size: 11px; color: var(--text-tertiary); }
+    .set-check { width: 20px; height: 20px; border-radius: 50%; border: 0.5px solid var(--border-mid); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; background: transparent; color: transparent; transition: all 0.12s; }
+    .set-check.done { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+    /* Plan */
+    .week-header { font-size: 12px; font-weight: 500; color: var(--text-secondary); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 10px; }
+    .day-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .day-cell { flex: 1; min-height: 60px; border: 0.5px solid var(--border-light); border-radius: var(--radius-md); padding: 8px 10px; }
+    .day-label { font-size: 10px; color: var(--text-tertiary); margin-bottom: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .day-activity { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+    .day-detail { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+    .day-rest { background: var(--bg-secondary); }
+    .day-run { border-left: 3px solid var(--teal); }
+    .day-lift { border-left: 3px solid var(--blue); }
+    .day-tempo { border-left: 3px solid var(--coral); }
+    .day-long { border-left: 3px solid var(--amber); }
+
+    /* Progress */
+    .progress-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .pr-list { display: flex; flex-direction: column; gap: 8px; }
+    .pr-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--bg-secondary); border-radius: var(--radius-md); }
+    .pr-exercise { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+    .pr-val { font-size: 13px; font-weight: 600; color: var(--teal); }
+    .pr-date { font-size: 11px; color: var(--text-secondary); }
+
+    /* Map */
+    .map-placeholder { height: 140px; background: var(--bg-secondary); border-radius: var(--radius-md); overflow: hidden; position: relative; margin-bottom: 12px; }
+
+    /* Scrollbar */
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-thumb { background: var(--border-mid); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M4 14l4-8 3 5 2-3 3 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <button class="nav-item active" onclick="showView('dashboard')" title="Dashboard">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button class="nav-item" onclick="showView('runs')" title="Runs">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="13" cy="4" r="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M10 6.5l2 2.5 3-1.5M6 10l2.5-1.5 1.5 2.5-2 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 15l2.5-2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="nav-item" onclick="showView('workout')" title="Workout">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M3 10h2m10 0h2M5 10h10M7 7v6M13 7v6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="nav-item" onclick="showView('plan')" title="Training Plan">
+      <svg viewBox="0 0 20 20" fill="none"><rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/><path d="M7 2v4M13 2v4M3 9h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
+    <button class="nav-item" onclick="showView('progress')" title="Progress">
+      <svg viewBox="0 0 20 20" fill="none"><path d="M3 15l4-5 4 2 5-7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div id="view-dashboard" class="view active">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Good morning, Alex</div>
+          <div class="page-sub">Tuesday, March 24 · Week 12 of training</div>
+        </div>
+        <button class="btn btn-primary">+ Log activity</button>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-label">Weekly distance</div><div class="metric-val">28<span class="metric-unit">km</span></div><div class="metric-delta delta-up">↑ 4.2 km vs last week</div></div>
+        <div class="metric-card"><div class="metric-label">Workouts done</div><div class="metric-val">4<span class="metric-unit">/6</span></div><div class="metric-delta delta-up">On track</div></div>
+        <div class="metric-card"><div class="metric-label">Avg pace</div><div class="metric-val">5:12<span class="metric-unit">/km</span></div><div class="metric-delta delta-up">↑ 8s faster</div></div>
+        <div class="metric-card"><div class="metric-label">Streak</div><div class="metric-val">11<span class="metric-unit">days</span></div><div class="metric-delta delta-up">Personal best</div></div>
+      </div>
+      <div class="charts-row">
+        <div class="card"><div class="card-title">Weekly mileage</div><div style="position:relative;width:100%;height:160px"><canvas id="mileageChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Activity split</div><div class="donut-wrap"><div style="position:relative;width:90px;height:90px;flex-shrink:0"><canvas id="donutChart"></canvas></div><div class="donut-legend"><div class="legend-row"><div class="legend-dot" style="background:#1D9E75"></div>Running 58%</div><div class="legend-row"><div class="legend-dot" style="background:#378ADD"></div>Lifting 29%</div><div class="legend-row"><div class="legend-dot" style="background:#BA7517"></div>Cycling 13%</div></div></div></div>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div class="card-title" style="margin-bottom:0">Recent activities</div><button class="btn" onclick="showView('runs')" style="font-size:12px;padding:5px 12px">View all</button></div>
+        <div class="activity-list">
+          <div class="activity-item"><div class="activity-icon icon-run">🏃</div><div class="activity-info"><div class="activity-name">Morning run</div><div class="activity-meta">Today · Easy pace</div></div><div class="activity-stats"><div class="activity-primary">8.4 km</div><div class="activity-secondary">43:22 · 5:09/km</div></div></div>
+          <div class="activity-item"><div class="activity-icon icon-lift">🏋️</div><div class="activity-info"><div class="activity-name">Upper body</div><div class="activity-meta">Yesterday · Strength</div></div><div class="activity-stats"><div class="activity-primary">52 min</div><div class="activity-secondary">18 sets · 4 exercises</div></div></div>
+          <div class="activity-item"><div class="activity-icon icon-run">🏃</div><div class="activity-info"><div class="activity-name">Tempo run</div><div class="activity-meta">Sunday · Hard effort</div></div><div class="activity-stats"><div class="activity-primary">6.0 km</div><div class="activity-secondary">28:14 · 4:42/km</div></div></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">This week's streak</div><div class="streak-row"><div class="streak-day streak-done">M</div><div class="streak-day streak-done">T</div><div class="streak-day streak-done">W</div><div class="streak-day streak-done">T</div><div class="streak-day streak-today">F</div><div class="streak-day streak-miss">S</div><div class="streak-day streak-miss">S</div></div></div>
+    </div>
+
+    <!-- Runs -->
+    <div id="view-runs" class="view">
+      <div class="page-header"><div><div class="page-title">Run tracking</div><div class="page-sub">47 runs logged · 312 km total</div></div><button class="btn btn-primary">+ Log run</button></div>
+      <div class="tab-bar"><button class="tab active" onclick="switchTab(this)">All runs</button><button class="tab" onclick="switchTab(this)">Long runs</button><button class="tab" onclick="switchTab(this)">Tempo</button><button class="tab" onclick="switchTab(this)">Easy</button></div>
+      <div class="card" style="margin-bottom:16px"><div class="card-title">Last 8 weeks · km per week</div><div style="position:relative;width:100%;height:140px"><canvas id="runWeekChart"></canvas></div></div>
+      <div class="map-placeholder">
+        <svg width="100%" height="140" viewBox="0 0 500 140" preserveAspectRatio="none">
+          <path d="M20,80 C50,60 80,100 120,70 C160,40 180,90 220,65 C260,40 280,85 320,55 C360,30 400,70 440,50 C460,42 475,60 490,55" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linecap="round" opacity="0.8"/>
+          <path d="M20,80 C50,60 80,100 120,70 C160,40 180,90 220,65 C260,40 280,85 320,55 C360,30 400,70 440,50 C460,42 475,60 490,55 L490,140 L20,140 Z" fill="#1D9E75" opacity="0.08"/>
+          <circle cx="20" cy="80" r="5" fill="#1D9E75"/><circle cx="490" cy="55" r="5" fill="#D85A30"/>
+          <text x="24" y="77" font-size="10" fill="#0F6E56">Start</text><text x="455" y="50" font-size="10" fill="#993C1D">End</text>
+        </svg>
+        <div style="position:absolute;top:10px;left:12px;font-size:11px;color:var(--text-secondary)">Route · Today's run</div>
+      </div>
+      <div class="metrics-grid" style="margin-bottom:16px">
+        <div class="metric-card"><div class="metric-label">Distance</div><div class="metric-val">8.4<span class="metric-unit">km</span></div></div>
+        <div class="metric-card"><div class="metric-label">Duration</div><div class="metric-val">43<span class="metric-unit">min</span></div></div>
+        <div class="metric-card"><div class="metric-label">Avg pace</div><div class="metric-val">5:09<span class="metric-unit">/km</span></div></div>
+        <div class="metric-card"><div class="metric-label">Avg HR</div><div class="metric-val">148<span class="metric-unit">bpm</span></div></div>
+      </div>
+      <div class="card"><div class="card-title">Pace per km</div><div style="position:relative;width:100%;height:120px"><canvas id="paceChart"></canvas></div></div>
+    </div>
+
+    <!-- Workout -->
+    <div id="view-workout" class="view">
+      <div class="page-header"><div><div class="page-title">Workout logger</div><div class="page-sub">Upper body · Today</div></div><button class="btn btn-primary">AI suggest</button></div>
+      <div class="tab-bar"><button class="tab active" onclick="switchTab(this)">Log</button><button class="tab" onclick="switchTab(this)">History</button><button class="tab" onclick="switchTab(this)">Library</button></div>
+      <div class="exercise-grid">
+        <div class="exercise-card"><div class="ex-header"><div class="ex-name">Bench press</div><div class="ex-badge badge-blue">Chest</div></div><div class="set-row"><span class="set-num">1</span><input class="set-input" value="80"><span class="set-x">kg ×</span><input class="set-input" value="8" style="max-width:40px"><button class="set-check done" onclick="toggleSet(this)">✓</button></div><div class="set-row"><span class="set-num">2</span><input class="set-input" value="80"><span class="set-x">kg ×</span><input class="set-input" value="8" style="max-width:40px"><button class="set-check done" onclick="toggleSet(this)">✓</button></div><div class="set-row"><span class="set-num">3</span><input class="set-input" value="82.5"><span class="set-x">kg ×</span><input class="set-input" value="6" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div></div>
+        <div class="exercise-card"><div class="ex-header"><div class="ex-name">Pull-ups</div><div class="ex-badge badge-green">Back</div></div><div class="set-row"><span class="set-num">1</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="10" style="max-width:40px"><button class="set-check done" onclick="toggleSet(this)">✓</button></div><div class="set-row"><span class="set-num">2</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="9" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div><div class="set-row"><span class="set-num">3</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="8" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div></div>
+        <div class="exercise-card"><div class="ex-header"><div class="ex-name">OHP</div><div class="ex-badge badge-amber">Shoulders</div></div><div class="set-row"><span class="set-num">1</span><input class="set-input" value="55"><span class="set-x">kg ×</span><input class="set-input" value="8" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div><div class="set-row"><span class="set-num">2</span><input class="set-input" value="55"><span class="set-x">kg ×</span><input class="set-input" value="8" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div><div class="set-row"><span class="set-num">3</span><input class="set-input" value="57.5"><span class="set-x">kg ×</span><input class="set-input" value="6" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div></div>
+        <div class="exercise-card"><div class="ex-header"><div class="ex-name">Dips</div><div class="ex-badge badge-blue">Triceps</div></div><div class="set-row"><span class="set-num">1</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="12" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div><div class="set-row"><span class="set-num">2</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="12" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div><div class="set-row"><span class="set-num">3</span><input class="set-input" value="BW"><span class="set-x"> ×</span><input class="set-input" value="10" style="max-width:40px"><button class="set-check" onclick="toggleSet(this)"></button></div></div>
+      </div>
+      <div style="display:flex;gap:10px"><button class="btn" style="flex:1;padding:10px">+ Add exercise</button><button class="btn btn-primary" style="flex:1;padding:10px">Finish workout</button></div>
+    </div>
+
+    <!-- Training Plan -->
+    <div id="view-plan" class="view">
+      <div class="page-header"><div><div class="page-title">Training plan</div><div class="page-sub">Half marathon · 14-week plan · Week 8</div></div><button class="btn btn-primary">Regenerate plan</button></div>
+      <div class="tab-bar"><button class="tab active" onclick="switchTab(this)">This week</button><button class="tab" onclick="switchTab(this)">Full plan</button><button class="tab" onclick="switchTab(this)">Adjust</button></div>
+      <div class="week-header" style="margin-bottom:10px">Week 8 of 14 · Focus: lactate threshold</div>
+      <div class="day-row">
+        <div class="day-cell day-run"><div class="day-label">Mon</div><div class="day-activity">Easy run</div><div class="day-detail">8 km · Z2</div></div>
+        <div class="day-cell day-lift"><div class="day-label">Tue</div><div class="day-activity">Upper body</div><div class="day-detail">Strength · 45 min</div></div>
+        <div class="day-cell day-tempo"><div class="day-label">Wed</div><div class="day-activity">Tempo run</div><div class="day-detail">6 km · 4:45/km</div></div>
+        <div class="day-cell day-rest"><div class="day-label">Thu</div><div class="day-activity" style="color:var(--text-secondary)">Rest / mobility</div><div class="day-detail">Active recovery</div></div>
+      </div>
+      <div class="day-row" style="margin-bottom:20px">
+        <div class="day-cell day-lift"><div class="day-label">Fri</div><div class="day-activity">Lower body</div><div class="day-detail">Strength · 50 min</div></div>
+        <div class="day-cell day-run"><div class="day-label">Sat</div><div class="day-activity">Intervals</div><div class="day-detail">5 × 1 km @ 4:20</div></div>
+        <div class="day-cell day-long"><div class="day-label">Sun</div><div class="day-activity">Long run</div><div class="day-detail">18 km · easy</div></div>
+        <div class="day-cell day-rest"><div class="day-label"></div></div>
+      </div>
+      <div class="card"><div class="card-title">Planned vs actual volume (km)</div><div style="position:relative;width:100%;height:130px"><canvas id="planChart"></canvas></div></div>
+    </div>
+
+    <!-- Progress -->
+    <div id="view-progress" class="view">
+      <div class="page-header"><div><div class="page-title">Progress</div><div class="page-sub">Last 12 weeks</div></div><button class="btn">AI analysis</button></div>
+      <div class="tab-bar"><button class="tab active" onclick="switchTab(this)">Running</button><button class="tab" onclick="switchTab(this)">Strength</button><button class="tab" onclick="switchTab(this)">Body</button></div>
+      <div class="progress-grid">
+        <div class="card"><div class="card-title">5K time (min)</div><div style="position:relative;width:100%;height:110px"><canvas id="fiveKChart"></canvas></div></div>
+        <div class="card"><div class="card-title">Weekly volume (km)</div><div style="position:relative;width:100%;height:110px"><canvas id="volChart"></canvas></div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title" style="margin-bottom:12px">Personal records</div>
+        <div class="pr-list">
+          <div class="pr-row"><div><div class="pr-exercise">5K</div><div class="pr-date">Mar 10, 2026</div></div><div class="pr-val">22:41</div></div>
+          <div class="pr-row"><div><div class="pr-exercise">10K</div><div class="pr-date">Feb 22, 2026</div></div><div class="pr-val">47:18</div></div>
+          <div class="pr-row"><div><div class="pr-exercise">Bench press</div><div class="pr-date">Mar 18, 2026</div></div><div class="pr-val">87.5 kg</div></div>
+          <div class="pr-row"><div><div class="pr-exercise">Deadlift</div><div class="pr-date">Mar 15, 2026</div></div><div class="pr-val">142 kg</div></div>
+          <div class="pr-row"><div><div class="pr-exercise">Half marathon</div><div class="pr-date">Jan 12, 2026</div></div><div class="pr-val">1:52:07</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+  const charts = {};
+  const teal='#1D9E75', blue='#378ADD', amber='#BA7517', coral='#D85A30';
+  const gridColor='rgba(128,128,128,0.12)', textColor='#888';
+  const baseOpts = {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}} },
+      y:{ grid:{color:gridColor}, ticks:{color:textColor,font:{size:11}} }
+    }
+  };
+
+  function mkChart(id, config) {
+    if (charts[id]) charts[id].destroy();
+    const el = document.getElementById(id);
+    if (el) charts[id] = new Chart(el, config);
+  }
+
+  function renderCharts(view) {
+    setTimeout(() => {
+      if (view === 'dashboard') {
+        mkChart('mileageChart', { type:'bar', data:{ labels:['W7','W8','W9','W10','W11','W12'], datasets:[{ data:[22,26,24,30,27,28], backgroundColor:teal+'99', borderColor:teal, borderWidth:1.5, borderRadius:4 }] }, options:baseOpts });
+        mkChart('donutChart', { type:'doughnut', data:{ datasets:[{ data:[58,29,13], backgroundColor:[teal,blue,amber], borderWidth:0 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{legend:{display:false}} } });
+      } else if (view === 'runs') {
+        mkChart('runWeekChart', { type:'line', data:{ labels:['W5','W6','W7','W8','W9','W10','W11','W12'], datasets:[{ data:[18,21,22,26,24,30,27,28], borderColor:teal, backgroundColor:teal+'18', fill:true, tension:0.4, pointRadius:3, pointBackgroundColor:teal }] }, options:baseOpts });
+        mkChart('paceChart', { type:'bar', data:{ labels:['1','2','3','4','5','6','7','8'], datasets:[{ data:[5.2,5.1,5.0,5.3,5.0,4.9,5.1,5.2], backgroundColor:teal+'bb', borderColor:teal, borderWidth:1, borderRadius:3 }] }, options:baseOpts });
+      } else if (view === 'plan') {
+        mkChart('planChart', { type:'bar', data:{ labels:['W5','W6','W7','W8'], datasets:[ { label:'Planned', data:[38,42,40,46], backgroundColor:blue+'55', borderColor:blue, borderWidth:1, borderRadius:4 }, { label:'Actual', data:[36,41,37,28], backgroundColor:teal+'99', borderColor:teal, borderWidth:1, borderRadius:4 } ] }, options:baseOpts });
+      } else if (view === 'progress') {
+        mkChart('fiveKChart', { type:'line', data:{ labels:['Jan','Feb','Mar'], datasets:[{ data:[25.1,23.8,22.7], borderColor:coral, backgroundColor:coral+'18', fill:true, tension:0.4, pointRadius:4, pointBackgroundColor:coral }] }, options:baseOpts });
+        mkChart('volChart', { type:'line', data:{ labels:['W1','W3','W5','W7','W9','W12'], datasets:[{ data:[18,20,22,26,27,28], borderColor:blue, backgroundColor:blue+'18', fill:true, tension:0.4, pointRadius:3, pointBackgroundColor:blue }] }, options:baseOpts });
+      }
+    }, 50);
+  }
+
+  function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+    const map = { dashboard:0, runs:1, workout:2, plan:3, progress:4 };
+    document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
+    renderCharts(id);
+  }
+
+  function switchTab(el) {
+    el.closest('.tab-bar').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  function toggleSet(btn) {
+    btn.classList.toggle('done');
+    btn.textContent = btn.classList.contains('done') ? '✓' : '';
+  }
+
+  renderCharts('dashboard');
+</script>
+</body>
+</html>
